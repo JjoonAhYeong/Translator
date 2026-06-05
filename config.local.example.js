@@ -1,0 +1,4 @@
+window.GEMINI_CONFIG = {
+  apiKey: "your_gemini_api_key_here",
+  model: "gemini-2.5-flash"
+};

@@ -1,0 +1,1230 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="한글을 제외한 외국어 문서를 한국어로 번역하는 도구">
+  <title>문서 번역기 | 한국어로 번역</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --mint-50: #f0faf7;
+      --mint-100: #d8f3ec;
+      --mint-200: #b8e8db;
+      --mint-300: #8fd9c5;
+      --mint-400: #6bc9b0;
+      --mint-500: #4db89c;
+      --mint-600: #3d9a82;
+      --mint-700: #2f7a67;
+      --bg: #f4faf8;
+      --surface: #ffffff;
+      --text: #1a2e28;
+      --text-secondary: #4a635c;
+      --text-muted: #7a948c;
+      --border: #d4ebe3;
+      --border-focus: #4db89c;
+      --shadow-sm: 0 1px 3px rgba(26, 46, 40, 0.06);
+      --shadow-md: 0 8px 24px rgba(26, 46, 40, 0.08);
+      --radius: 12px;
+      --radius-lg: 16px;
+      --transition: 0.2s ease;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      min-height: 100dvh;
+    }
+
+    .skip-link {
+      position: absolute;
+      top: -100%;
+      left: 1rem;
+      z-index: 200;
+      padding: 0.5rem 1rem;
+      background: var(--mint-600);
+      color: #fff;
+      border-radius: var(--radius);
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .skip-link:focus {
+      top: 1rem;
+    }
+
+    header {
+      padding: 1.25rem 1.5rem;
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .header-inner {
+      max-width: 960px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 0.625rem;
+      text-decoration: none;
+      color: var(--text);
+    }
+
+    .logo-icon {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, var(--mint-300), var(--mint-500));
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .logo-icon svg {
+      width: 20px;
+      height: 20px;
+      color: #fff;
+    }
+
+    .logo-text h1 {
+      font-size: 1.125rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+
+    .logo-text p {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-weight: 400;
+    }
+
+    .gemini-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      font-size: 0.6875rem;
+      font-weight: 500;
+      padding: 0.25rem 0.625rem;
+      border-radius: 999px;
+      background: var(--mint-100);
+      color: var(--mint-700);
+      border: 1px solid var(--mint-200);
+    }
+
+    .gemini-badge.offline {
+      background: #fef2f2;
+      color: #991b1b;
+      border-color: #fecaca;
+    }
+
+    .gemini-badge svg {
+      width: 12px;
+      height: 12px;
+    }
+
+    main {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem 3rem;
+    }
+
+    .hero {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    .hero h2 {
+      font-size: clamp(1.375rem, 4vw, 1.75rem);
+      font-weight: 600;
+      color: var(--text);
+      letter-spacing: -0.03em;
+      margin-bottom: 0.5rem;
+    }
+
+    .hero p {
+      font-size: 0.9375rem;
+      color: var(--text-secondary);
+      max-width: 480px;
+      margin: 0 auto;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+    }
+
+    .dropzone {
+      padding: 2rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      text-align: center;
+      transition: background var(--transition), border-color var(--transition);
+      cursor: pointer;
+    }
+
+    .dropzone:hover,
+    .dropzone:focus-within,
+    .dropzone.dragover {
+      background: var(--mint-50);
+      border-color: var(--mint-300);
+    }
+
+    .dropzone-icon {
+      width: 48px;
+      height: 48px;
+      margin: 0 auto 0.75rem;
+      background: var(--mint-100);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--mint-600);
+    }
+
+    .dropzone h3 {
+      font-size: 0.9375rem;
+      font-weight: 500;
+      margin-bottom: 0.25rem;
+    }
+
+    .dropzone p {
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+    }
+
+    .dropzone .formats {
+      margin-top: 0.5rem;
+      font-size: 0.75rem;
+      color: var(--mint-600);
+    }
+
+    #file-input {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      border: 0;
+    }
+
+    .panels {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+    }
+
+    @media (max-width: 720px) {
+      .panels {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .panel {
+      display: flex;
+      flex-direction: column;
+      min-height: 280px;
+    }
+
+    .panel + .panel {
+      border-left: 1px solid var(--border);
+    }
+
+    @media (max-width: 720px) {
+      .panel + .panel {
+        border-left: none;
+        border-top: 1px solid var(--border);
+      }
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.75rem 1rem;
+      background: var(--mint-50);
+      border-bottom: 1px solid var(--border);
+      gap: 0.5rem;
+    }
+
+    .panel-label {
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: var(--mint-700);
+      display: flex;
+      align-items: center;
+      gap: 0.375rem;
+    }
+
+    .lang-badge {
+      font-size: 0.6875rem;
+      font-weight: 500;
+      padding: 0.125rem 0.5rem;
+      background: var(--mint-100);
+      color: var(--mint-700);
+      border-radius: 999px;
+    }
+
+    .panel-actions {
+      display: flex;
+      gap: 0.25rem;
+    }
+
+    .icon-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background var(--transition), color var(--transition);
+    }
+
+    .icon-btn:hover {
+      background: var(--mint-100);
+      color: var(--mint-700);
+    }
+
+    .icon-btn:focus-visible {
+      outline: 2px solid var(--border-focus);
+      outline-offset: 2px;
+    }
+
+    .icon-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .icon-btn svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    textarea {
+      flex: 1;
+      width: 100%;
+      padding: 1rem;
+      border: none;
+      resize: vertical;
+      min-height: 220px;
+      font-family: inherit;
+      font-size: 0.9375rem;
+      line-height: 1.7;
+      color: var(--text);
+      background: var(--surface);
+    }
+
+    textarea:focus {
+      outline: none;
+    }
+
+    textarea::placeholder {
+      color: var(--text-muted);
+    }
+
+    textarea[readonly] {
+      background: var(--mint-50);
+    }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      padding: 1rem 1.25rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      margin-top: 1.25rem;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .char-info {
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+    }
+
+    .char-info strong {
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.375rem;
+      padding: 0.625rem 1.25rem;
+      font-family: inherit;
+      font-size: 0.875rem;
+      font-weight: 500;
+      border-radius: var(--radius);
+      border: none;
+      cursor: pointer;
+      transition: background var(--transition), transform var(--transition), box-shadow var(--transition);
+    }
+
+    .btn:focus-visible {
+      outline: 2px solid var(--border-focus);
+      outline-offset: 2px;
+    }
+
+    .btn:active:not(:disabled) {
+      transform: scale(0.98);
+    }
+
+    .btn:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--mint-400), var(--mint-500));
+      color: #fff;
+      box-shadow: 0 2px 8px rgba(77, 184, 156, 0.3);
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: linear-gradient(135deg, var(--mint-500), var(--mint-600));
+    }
+
+    .btn-secondary {
+      background: var(--mint-50);
+      color: var(--mint-700);
+      border: 1px solid var(--border);
+    }
+
+    .btn-secondary:hover:not(:disabled) {
+      background: var(--mint-100);
+    }
+
+    .btn-accent {
+      background: linear-gradient(135deg, var(--mint-500), var(--mint-600));
+      color: #fff;
+      box-shadow: 0 2px 8px rgba(61, 154, 130, 0.35);
+    }
+
+    .btn-accent:hover:not(:disabled) {
+      background: linear-gradient(135deg, var(--mint-600), var(--mint-700));
+    }
+
+    .btn svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .summary-card {
+      margin-top: 1.25rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+      display: none;
+    }
+
+    .summary-card.visible {
+      display: block;
+    }
+
+    .summary-content {
+      padding: 1rem 1.25rem 1.25rem;
+      font-size: 0.9375rem;
+      line-height: 1.75;
+      color: var(--text-secondary);
+      white-space: pre-wrap;
+    }
+
+    .summary-line {
+      display: flex;
+      gap: 0.625rem;
+      padding: 0.5rem 0;
+      border-bottom: 1px solid var(--mint-100);
+    }
+
+    .summary-line:last-child {
+      border-bottom: none;
+    }
+
+    .summary-line-num {
+      flex-shrink: 0;
+      width: 1.25rem;
+      height: 1.25rem;
+      border-radius: 50%;
+      background: var(--mint-200);
+      color: var(--mint-700);
+      font-size: 0.6875rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 0.15rem;
+    }
+
+    .summary-line-text {
+      flex: 1;
+    }
+
+    .tts-controls {
+      display: flex;
+      gap: 0.25rem;
+    }
+
+    .tts-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.25rem 0.625rem;
+      font-family: inherit;
+      font-size: 0.75rem;
+      font-weight: 500;
+      border: 1px solid var(--mint-200);
+      background: var(--surface);
+      color: var(--mint-700);
+      border-radius: 999px;
+      cursor: pointer;
+      transition: background var(--transition), color var(--transition);
+    }
+
+    .tts-btn:hover:not(:disabled) {
+      background: var(--mint-100);
+    }
+
+    .tts-btn:focus-visible {
+      outline: 2px solid var(--border-focus);
+      outline-offset: 2px;
+    }
+
+    .tts-btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .tts-btn.playing {
+      background: var(--mint-200);
+      color: var(--mint-700);
+    }
+
+    .tts-btn svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    .status {
+      margin-top: 1rem;
+      padding: 0.75rem 1rem;
+      border-radius: var(--radius);
+      font-size: 0.875rem;
+      display: none;
+      align-items: flex-start;
+      gap: 0.5rem;
+    }
+
+    .status.visible {
+      display: flex;
+    }
+
+    .status-info {
+      background: var(--mint-50);
+      border: 1px solid var(--mint-200);
+      color: var(--mint-700);
+    }
+
+    .status-warn {
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      color: #92400e;
+    }
+
+    .status-error {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #991b1b;
+    }
+
+    .status-success {
+      background: var(--mint-50);
+      border: 1px solid var(--mint-300);
+      color: var(--mint-700);
+    }
+
+    .status svg {
+      width: 18px;
+      height: 18px;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .progress-wrap {
+      margin-top: 1rem;
+      display: none;
+    }
+
+    .progress-wrap.visible {
+      display: block;
+    }
+
+    .progress-bar {
+      height: 4px;
+      background: var(--mint-100);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--mint-400), var(--mint-500));
+      border-radius: 999px;
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+
+    .progress-text {
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      margin-top: 0.375rem;
+      text-align: center;
+    }
+
+    footer {
+      text-align: center;
+      padding: 1.5rem;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .spinner {
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <a href="#main-content" class="skip-link">본문으로 건너뛰기</a>
+
+  <header>
+    <div class="header-inner">
+      <a href="#" class="logo" aria-label="문서 번역기 홈">
+        <div class="logo-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 8l6 6"/><path d="M4 14l6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="M22 22l-5-10-5 10"/><path d="M14 18h6"/>
+          </svg>
+        </div>
+        <div class="logo-text">
+          <h1>문서 번역기</h1>
+          <p>외국어 → 한국어 · Gemini</p>
+        </div>
+      </a>
+      <span class="gemini-badge offline" id="gemini-badge" aria-live="polite">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        연결 확인 중
+      </span>
+    </div>
+  </header>
+
+  <main id="main-content">
+    <section class="hero" aria-labelledby="hero-title">
+      <h2 id="hero-title">문서를 한국어로 번역하세요</h2>
+      <p>외국어 문서를 한국어로 번역하고, 5줄 요약을 음성(TTS)으로 들을 수 있습니다.</p>
+    </section>
+
+    <div class="card">
+      <label class="dropzone" id="dropzone" for="file-input" tabindex="0" role="button" aria-label="파일 업로드 영역. 클릭하거나 파일을 끌어다 놓으세요">
+        <div class="dropzone-icon" aria-hidden="true">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+          </svg>
+        </div>
+        <h3>파일을 끌어다 놓거나 클릭하여 업로드</h3>
+        <p>텍스트 파일의 내용을 자동으로 불러옵니다</p>
+        <p class="formats">지원 형식: .txt, .md, .csv, .json, .html</p>
+        <input type="file" id="file-input" accept=".txt,.md,.csv,.json,.html,.xml,.log,.rst" aria-describedby="file-formats">
+      </label>
+
+      <div class="panels">
+        <div class="panel">
+          <div class="panel-header">
+            <span class="panel-label">
+              원문
+              <span class="lang-badge" id="source-lang" aria-live="polite">자동 감지</span>
+            </span>
+            <div class="panel-actions">
+              <button type="button" class="icon-btn" id="clear-btn" aria-label="원문 지우기" title="지우기">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/></svg>
+              </button>
+            </div>
+          </div>
+          <textarea
+            id="source-text"
+            placeholder="번역할 텍스트를 입력하거나 붙여넣으세요..."
+            aria-label="번역할 원문 텍스트"
+            spellcheck="false"
+          ></textarea>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <span class="panel-label">
+              번역 결과
+              <span class="lang-badge">한국어</span>
+            </span>
+            <div class="panel-actions">
+              <button type="button" class="icon-btn" id="copy-btn" aria-label="번역 결과 복사" title="복사" disabled>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+              </button>
+              <button type="button" class="icon-btn" id="download-btn" aria-label="번역 결과 다운로드" title="다운로드" disabled>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              </button>
+            </div>
+          </div>
+          <textarea
+            id="result-text"
+            readonly
+            placeholder="번역 결과가 여기에 표시됩니다"
+            aria-label="번역된 한국어 텍스트"
+            aria-live="polite"
+          ></textarea>
+        </div>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <p class="char-info" aria-live="polite">
+        <strong id="char-count">0</strong>자 · 약 <strong id="word-count">0</strong>단어
+      </p>
+      <div class="btn-group">
+        <button type="button" class="btn btn-secondary" id="swap-clear-btn">전체 초기화</button>
+        <button type="button" class="btn btn-primary" id="translate-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          번역 시작
+        </button>
+        <button type="button" class="btn btn-accent" id="translate-summary-tts-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 8l6 6"/><path d="M4 14l6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="M22 22l-5-10-5 10"/><path d="M14 18h6"/><path d="M11 14a3 3 0 0 0 0-4"/><path d="M15 12h.01"/></svg>
+          번역+5줄요약(TTS)
+        </button>
+      </div>
+    </div>
+
+    <div class="summary-card" id="summary-card" aria-labelledby="summary-label">
+      <div class="panel-header">
+        <span class="panel-label" id="summary-label">
+          5줄 요약
+          <span class="lang-badge">한국어 · TTS</span>
+        </span>
+        <div class="tts-controls">
+          <button type="button" class="tts-btn" id="tts-play-btn" aria-label="요약 음성 재생" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            재생
+          </button>
+          <button type="button" class="tts-btn" id="tts-stop-btn" aria-label="음성 정지" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="6" width="12" height="12" rx="1"/></svg>
+            정지
+          </button>
+        </div>
+      </div>
+      <div class="summary-content" id="summary-text" aria-live="polite"></div>
+    </div>
+
+    <div class="progress-wrap" id="progress-wrap" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="번역 진행률">
+      <div class="progress-bar">
+        <div class="progress-fill" id="progress-fill"></div>
+      </div>
+      <p class="progress-text" id="progress-text">번역 중...</p>
+    </div>
+
+    <div class="status status-info" id="status" role="status" aria-live="polite"></div>
+  </main>
+
+  <footer>
+    <p>Google Gemini API 기반 · 입력 텍스트는 번역·요약에만 사용되며 저장되지 않습니다.</p>
+  </footer>
+
+  <script>
+    const LANG_NAMES = {
+      en: '영어', ja: '일본어', zh: '중국어', 'zh-CN': '중국어(간체)', 'zh-TW': '중국어(번체)',
+      es: '스페인어', fr: '프랑스어', de: '독일어', ru: '러시아어', pt: '포르투갈어',
+      it: '이탈리아어', vi: '베트남어', th: '태국어', id: '인도네시아어', ar: '아랍어',
+      ko: '한국어', auto: '자동 감지'
+    };
+
+    const API_BASE = '';
+    const KOREAN_RATIO_THRESHOLD = 0.4;
+
+    const $ = (id) => document.getElementById(id);
+
+    const sourceText = $('source-text');
+    const resultText = $('result-text');
+    const sourceLang = $('source-lang');
+    const charCount = $('char-count');
+    const wordCount = $('word-count');
+    const translateBtn = $('translate-btn');
+    const translateSummaryTtsBtn = $('translate-summary-tts-btn');
+    const copyBtn = $('copy-btn');
+    const downloadBtn = $('download-btn');
+    const clearBtn = $('clear-btn');
+    const swapClearBtn = $('swap-clear-btn');
+    const dropzone = $('dropzone');
+    const fileInput = $('file-input');
+    const statusEl = $('status');
+    const progressWrap = $('progress-wrap');
+    const progressFill = $('progress-fill');
+    const progressText = $('progress-text');
+    const summaryCard = $('summary-card');
+    const summaryText = $('summary-text');
+    const ttsPlayBtn = $('tts-play-btn');
+    const ttsStopBtn = $('tts-stop-btn');
+    const geminiBadge = $('gemini-badge');
+
+    let serverReady = false;
+
+    const BTN_LABELS = {
+      translate: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg> 번역 시작',
+      summaryTts: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 8l6 6"/><path d="M4 14l6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="M22 22l-5-10-5 10"/><path d="M14 18h6"/><path d="M11 14a3 3 0 0 0 0-4"/><path d="M15 12h.01"/></svg> 번역+5줄요약(TTS)'
+    };
+
+    let isProcessing = false;
+    let detectedLang = 'auto';
+    let currentSummary = '';
+    let currentSummaryLines = [];
+    let isSpeaking = false;
+    let koVoices = [];
+
+    if ('speechSynthesis' in window) {
+      const loadVoices = () => {
+        koVoices = speechSynthesis.getVoices().filter((v) => v.lang.startsWith('ko'));
+      };
+      loadVoices();
+      speechSynthesis.onvoiceschanged = loadVoices;
+    }
+
+    function updateCounts() {
+      const text = sourceText.value;
+      charCount.textContent = text.length.toLocaleString('ko-KR');
+      const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+      wordCount.textContent = words.toLocaleString('ko-KR');
+    }
+
+    function showStatus(message, type = 'info') {
+      const icons = {
+        info: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>',
+        warn: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+        error: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>',
+        success: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>'
+      };
+      statusEl.className = `status status-${type} visible`;
+      statusEl.innerHTML = icons[type] + '<span>' + message + '</span>';
+    }
+
+    function hideStatus() {
+      statusEl.className = 'status';
+      statusEl.innerHTML = '';
+    }
+
+    function setProgress(percent, text) {
+      progressWrap.classList.add('visible');
+      progressWrap.setAttribute('aria-valuenow', percent);
+      progressFill.style.width = percent + '%';
+      progressText.textContent = text || '번역 중...';
+    }
+
+    function hideProgress() {
+      progressWrap.classList.remove('visible');
+      progressFill.style.width = '0%';
+    }
+
+    function koreanRatio(text) {
+      if (!text.trim()) return 0;
+      const korean = (text.match(/[\uAC00-\uD7AF\u1100-\u11FF\u3130-\u318F]/g) || []).length;
+      const letters = (text.match(/\S/g) || []).length;
+      return letters ? korean / letters : 0;
+    }
+
+    async function apiRequest(path, body) {
+      const res = await fetch(API_BASE + path, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || '요청에 실패했습니다. 잠시 후 다시 시도해 주세요.');
+      return data;
+    }
+
+    async function checkServerHealth() {
+      try {
+        const res = await fetch(API_BASE + '/api/health');
+        if (!res.ok) throw new Error('offline');
+        const data = await res.json();
+        serverReady = true;
+        geminiBadge.className = 'gemini-badge';
+        geminiBadge.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Gemini 연결됨';
+      } catch {
+        serverReady = false;
+        geminiBadge.className = 'gemini-badge offline';
+        geminiBadge.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> 서버 오프라인';
+        showStatus('서버가 실행되지 않았습니다. translator 폴더에서 python server.py 를 실행해 주세요.', 'warn');
+      }
+    }
+
+    async function geminiTranslate(text) {
+      return apiRequest('/api/translate', { text });
+    }
+
+    async function geminiSummarize(text) {
+      return apiRequest('/api/summarize', { text });
+    }
+
+    function setActionButtonsDisabled(disabled) {
+      translateBtn.disabled = disabled;
+      translateSummaryTtsBtn.disabled = disabled;
+      copyBtn.disabled = disabled;
+      downloadBtn.disabled = disabled;
+    }
+
+    function setProcessingUI(activeBtn, label) {
+      const spinner = '<svg class="spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>';
+      activeBtn.innerHTML = spinner + ' ' + label;
+      setActionButtonsDisabled(true);
+    }
+
+    function resetProcessingUI() {
+      translateBtn.innerHTML = BTN_LABELS.translate;
+      translateSummaryTtsBtn.innerHTML = BTN_LABELS.summaryTts;
+      translateBtn.disabled = false;
+      translateSummaryTtsBtn.disabled = false;
+      const hasResult = !!resultText.value.trim();
+      copyBtn.disabled = !hasResult;
+      downloadBtn.disabled = !hasResult;
+    }
+
+    function hideSummary() {
+      summaryCard.classList.remove('visible');
+      summaryText.innerHTML = '';
+      currentSummary = '';
+      currentSummaryLines = [];
+      ttsPlayBtn.disabled = true;
+      ttsStopBtn.disabled = true;
+      ttsPlayBtn.classList.remove('playing');
+    }
+
+    function renderSummaryLines(lines) {
+      summaryText.innerHTML = lines.map((line, idx) => (
+        '<div class="summary-line">' +
+          '<span class="summary-line-num" aria-hidden="true">' + (idx + 1) + '</span>' +
+          '<span class="summary-line-text">' + line.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</span>' +
+        '</div>'
+      )).join('');
+    }
+
+    function showSummary(text, lines) {
+      currentSummaryLines = (lines && lines.length ? lines : text.split('\n')).filter((l) => l.trim());
+      currentSummary = currentSummaryLines.join('\n');
+      renderSummaryLines(currentSummaryLines);
+      summaryCard.classList.add('visible');
+      ttsPlayBtn.disabled = !currentSummary;
+      ttsStopBtn.disabled = !currentSummary;
+    }
+
+    function stopSpeaking() {
+      isSpeaking = false;
+      if ('speechSynthesis' in window) speechSynthesis.cancel();
+      ttsPlayBtn.classList.remove('playing');
+      ttsPlayBtn.disabled = !currentSummary;
+      ttsStopBtn.disabled = !currentSummary;
+    }
+
+    function speakLine(line) {
+      return new Promise((resolve, reject) => {
+        koVoices = speechSynthesis.getVoices().filter((v) => v.lang.startsWith('ko'));
+        const utterance = new SpeechSynthesisUtterance(line);
+        utterance.lang = 'ko-KR';
+        utterance.rate = 0.92;
+        utterance.pitch = 1;
+        if (koVoices.length) utterance.voice = koVoices[0];
+        utterance.onend = () => resolve();
+        utterance.onerror = () => reject(new Error('TTS error'));
+        speechSynthesis.speak(utterance);
+      });
+    }
+
+    async function speakSummary() {
+      if (!currentSummaryLines.length) return;
+      if (!('speechSynthesis' in window)) {
+        showStatus('이 브라우저는 음성 읽기(TTS)를 지원하지 않습니다.', 'warn');
+        return;
+      }
+
+      stopSpeaking();
+      isSpeaking = true;
+      ttsPlayBtn.classList.add('playing');
+      ttsPlayBtn.disabled = true;
+      ttsStopBtn.disabled = false;
+      showStatus('5줄 요약을 순서대로 읽어 드리고 있습니다.', 'info');
+
+      try {
+        for (let i = 0; i < currentSummaryLines.length; i++) {
+          if (!isSpeaking) break;
+          setProgress(Math.round(((i + 1) / currentSummaryLines.length) * 100), `TTS 재생 중... (${i + 1}/${currentSummaryLines.length}줄)`);
+          await speakLine(currentSummaryLines[i]);
+          if (isSpeaking && i < currentSummaryLines.length - 1) {
+            await new Promise((r) => setTimeout(r, 400));
+          }
+        }
+        if (isSpeaking) {
+          showStatus('5줄 요약 음성 재생이 완료되었습니다.', 'success');
+        }
+      } catch {
+        showStatus('음성 재생 중 오류가 발생했습니다.', 'error');
+      } finally {
+        isSpeaking = false;
+        ttsPlayBtn.classList.remove('playing');
+        ttsPlayBtn.disabled = !currentSummary;
+        ttsStopBtn.disabled = !currentSummary;
+        hideProgress();
+      }
+    }
+
+    async function translateText(text, onProgress) {
+      if (!serverReady) {
+        await checkServerHealth();
+        if (!serverReady) throw new Error('Gemini 서버에 연결할 수 없습니다. python server.py 를 실행해 주세요.');
+      }
+
+      const ratio = koreanRatio(text);
+      if (ratio >= KOREAN_RATIO_THRESHOLD) {
+        showStatus('입력된 텍스트가 이미 한국어로 작성된 것으로 보입니다. 그래도 번역을 진행할 수 있습니다.', 'warn');
+      } else {
+        hideStatus();
+      }
+
+      setProgress(20, 'Gemini 번역 중...');
+      if (onProgress) onProgress(20, 'Gemini 번역 중...');
+
+      const data = await geminiTranslate(text);
+      detectedLang = data.sourceLang || 'auto';
+      sourceLang.textContent = data.sourceLangName || LANG_NAMES[detectedLang] || detectedLang;
+      resultText.value = data.translation;
+
+      if (data.alreadyKorean) {
+        showStatus('원문이 이미 한국어입니다. 별도 번역 없이 그대로 표시했습니다.', 'info');
+      }
+
+      const chunkMsg = data.chunks > 1 ? `Gemini 번역 완료 (${data.chunks}개 구간)` : 'Gemini 번역 완료';
+      setProgress(100, chunkMsg);
+      if (onProgress) onProgress(100, chunkMsg);
+      return data.translation;
+    }
+
+    async function runAction(mode) {
+      const text = sourceText.value.trim();
+      if (!text) {
+        showStatus('번역할 텍스트를 입력하거나 파일을 업로드해 주세요.', 'warn');
+        sourceText.focus();
+        return;
+      }
+
+      if (isProcessing) return;
+      isProcessing = true;
+      stopSpeaking();
+      resultText.value = '';
+      hideSummary();
+      hideStatus();
+
+      const activeBtn = mode === 'summary-tts' ? translateSummaryTtsBtn : translateBtn;
+      setProcessingUI(activeBtn, mode === 'summary-tts' ? '처리 중...' : '번역 중...');
+
+      try {
+        const translated = await translateText(text, (pct, msg) => {
+          if (mode === 'summary-tts' && pct >= 100) {
+            setProgress(70, '요약 생성 중...');
+          }
+        });
+
+        copyBtn.disabled = false;
+        downloadBtn.disabled = false;
+
+        if (mode === 'summary-tts') {
+          setProgress(75, '5줄 요약 생성 중...');
+          const summaryData = await geminiSummarize(translated);
+          showSummary(summaryData.summary, summaryData.lines);
+          setProgress(95, '5줄 TTS 재생 준비 중...');
+          await speakSummary();
+          showStatus('번역과 5줄 요약이 완료되었습니다.', 'success');
+        } else {
+          showStatus('번역이 완료되었습니다.', 'success');
+        }
+      } catch (err) {
+        showStatus(err.message || '처리 중 오류가 발생했습니다.', 'error');
+      } finally {
+        isProcessing = false;
+        resetProcessingUI();
+        hideProgress();
+      }
+    }
+
+    function handleTranslate() {
+      runAction('translate');
+    }
+
+    function handleTranslateSummaryTts() {
+      runAction('summary-tts');
+    }
+
+    function readFile(file) {
+      const allowed = ['.txt', '.md', '.csv', '.json', '.html', '.xml', '.log', '.rst'];
+      const ext = '.' + file.name.split('.').pop().toLowerCase();
+      if (!allowed.includes(ext)) {
+        showStatus('지원하지 않는 파일 형식입니다. 텍스트 기반 파일(.txt, .md 등)을 사용해 주세요.', 'error');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        sourceText.value = e.target.result;
+        updateCounts();
+        hideStatus();
+        showStatus('"' + file.name + '" 파일을 불러왔습니다. 번역 시작 버튼을 눌러 주세요.', 'success');
+        sourceText.focus();
+      };
+      reader.onerror = () => showStatus('파일을 읽는 중 오류가 발생했습니다.', 'error');
+      reader.readAsText(file, 'UTF-8');
+    }
+
+    async function copyResult() {
+      const text = resultText.value;
+      if (!text) return;
+      try {
+        await navigator.clipboard.writeText(text);
+        showStatus('클립보드에 복사되었습니다.', 'success');
+      } catch {
+        resultText.select();
+        document.execCommand('copy');
+        showStatus('클립보드에 복사되었습니다.', 'success');
+      }
+    }
+
+    function downloadResult() {
+      const text = resultText.value;
+      if (!text) return;
+      const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'translated_ko_' + new Date().toISOString().slice(0, 10) + '.txt';
+      a.click();
+      URL.revokeObjectURL(url);
+      showStatus('번역 결과가 다운로드되었습니다.', 'success');
+    }
+
+    function resetAll() {
+      stopSpeaking();
+      sourceText.value = '';
+      resultText.value = '';
+      sourceLang.textContent = '자동 감지';
+      hideSummary();
+      copyBtn.disabled = true;
+      downloadBtn.disabled = true;
+      fileInput.value = '';
+      updateCounts();
+      hideStatus();
+      hideProgress();
+      sourceText.focus();
+    }
+
+    sourceText.addEventListener('input', updateCounts);
+
+    translateBtn.addEventListener('click', handleTranslate);
+    translateSummaryTtsBtn.addEventListener('click', handleTranslateSummaryTts);
+    ttsPlayBtn.addEventListener('click', speakSummary);
+    ttsStopBtn.addEventListener('click', stopSpeaking);
+    copyBtn.addEventListener('click', copyResult);
+    downloadBtn.addEventListener('click', downloadResult);
+    clearBtn.addEventListener('click', () => {
+      sourceText.value = '';
+      updateCounts();
+      hideStatus();
+      sourceText.focus();
+    });
+    swapClearBtn.addEventListener('click', resetAll);
+
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files[0]) readFile(e.target.files[0]);
+    });
+
+    dropzone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropzone.classList.add('dragover');
+    });
+    dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
+    dropzone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropzone.classList.remove('dragover');
+      if (e.dataTransfer.files[0]) readFile(e.dataTransfer.files[0]);
+    });
+
+    dropzone.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        fileInput.click();
+      }
+    });
+
+    sourceText.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        handleTranslate();
+      }
+    });
+
+    updateCounts();
+    checkServerHealth();
+  </script>
+</body>
+</html>
